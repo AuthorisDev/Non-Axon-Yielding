@@ -1,0 +1,422 @@
+#pragma once
+
+#include <string>
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <vector>
+#include <unordered_map>
+#include "Offsets.h"
+#include <Wininet.h>
+#include <map>
+#include "ConsoleCol.h"
+#include "Utilities.h"
+#pragma comment(lib, "wininet.lib")
+#pragma comment(lib, "urlmon.lib")
+
+struct Userdata
+{
+	UINT32 reference;
+};
+
+namespace Wrapper {
+	DWORD locateINT3();
+	DWORD INT3Breakpoint;
+	void Wrap(DWORD RL, lua_State* L, int Index);
+	void UnWrap(lua_State* L, DWORD RL, int Index);
+	int RBXFuncHandler(DWORD R);
+	int LuaFuncHandler(lua_State* L);
+	void ExecuteScript(std::string script);
+	LONG WINAPI bigboihandler(PEXCEPTION_POINTERS ex);
+	HWND RobloxWindow;
+
+	namespace Functions
+	{
+		int LoadLibraryImpl(lua_State* L);
+		int GetObjects(lua_State* L);
+		int HttpGet(lua_State* L);
+	}
+
+	namespace DataTypes {
+		DWORD R_LUA_TNIL = 0;
+		DWORD R_LUA_TTABLE = 0;
+		DWORD R_LUA_TNUMBER = 0;
+		DWORD R_LUA_TSTRING = 0;
+		DWORD R_LUA_TTHREAD = 0;
+		DWORD R_LUA_TBOOLEAN = 0;
+		DWORD R_LUA_TFUNCTION = 0;
+		DWORD R_LUA_TUSERDATA = 0;
+		DWORD R_LUA_TLIGHTUSERDATA = 0;
+		DWORD R_LUA_TNONE = -1;
+		void Update(DWORD l) {
+			DebugOutput("Updating Data Types... ", "");
+			DWORD RL = r_lua_newthread(l);
+
+			r_lua_getfield(RL, -10002, "game");
+			R_LUA_TUSERDATA = r_lua_type(RL, -1);
+			r_lua_remove(RL, -1);
+			DebugOutput("TUSERDATA: ", R_LUA_TUSERDATA);
+			Sleep(2);
+
+			r_lua_getfield(RL, -10002, "pcall");
+			R_LUA_TFUNCTION = r_lua_type(RL, -1);
+			r_lua_remove(RL, -1);
+			DebugOutput("TFUNCTION: ", R_LUA_TFUNCTION);
+			Sleep(2);
+			
+			r_lua_pushstring(RL, "");
+			R_LUA_TSTRING = r_lua_type(RL, -1);
+			r_lua_remove(RL, -1);
+			DebugOutput("TSTRING: ", R_LUA_TSTRING);
+			Sleep(2);
+
+			r_lua_pushboolean(RL, true);
+			R_LUA_TBOOLEAN = r_lua_type(RL, -1);
+			r_lua_remove(RL, -1);
+			DebugOutput("TBOOLEAN: ", R_LUA_TBOOLEAN);
+			Sleep(2);
+
+			r_lua_pushnumber(RL, 1);
+			R_LUA_TNUMBER = r_lua_type(RL, -1);
+			r_lua_remove(RL, -1);
+			DebugOutput("TNUMBER: ", R_LUA_TNUMBER);
+			Sleep(2);
+
+			r_lua_createtable(RL, 0, 0);
+			R_LUA_TTABLE = r_lua_type(RL, -1);
+			r_lua_remove(RL, -1);
+			DebugOutput("TTABLE: ", R_LUA_TTABLE);
+			Sleep(2);
+
+			r_lua_pushnil(RL);
+			R_LUA_TNIL = r_lua_type(RL, -1);
+			r_lua_remove(RL, -1);
+			DebugOutput("TNIL: ", R_LUA_TNIL);
+			Sleep(2);
+
+			r_lua_pushthread(RL);
+			R_LUA_TTHREAD = r_lua_type(RL, -1);
+			r_lua_remove(RL, -1);
+			DebugOutput("TTHREAD: ", R_LUA_TTHREAD);
+			Sleep(2);
+
+			r_lua_pushlightuserdata(RL, nullptr);
+			R_LUA_TLIGHTUSERDATA = r_lua_type(RL, -1);
+			r_lua_remove(RL, -1);
+			DebugOutput("TLIGHTUSERDATA: ", R_LUA_TLIGHTUSERDATA);
+			Sleep(2);
+
+			r_lua_settop(RL, 0);
+
+			DebugOutput("Updating Data Types... ", "Done!");
+		}
+	}
+
+#define r_setobj2s(obj1, obj2) \
+{ \
+	r_TValue *o1 = (r_TValue*)obj1, *o2 = (r_TValue*)obj2; \
+	o1->tt = o2->tt; \
+	o1->value = o2->value; \
+}
+
+	namespace MetaMethods {
+		static int GarbageCollector(lua_State* L) {
+			return 0;
+		}
+		int gmt_setindex(lua_State* L) {
+	
+			return 0;
+		}
+		int Index(lua_State* L) {
+		}
+	}
+
+	namespace Functions {
+		int LoadLibraryImpl(lua_State* L) {
+			std::string RbxGuiLink = "https://raw.githubusercontent.com/Roblox/Core-Scripts/master/CoreScriptsRoot/Libraries/RbxGui.lua";
+			std::string RbxStamperLink = "https://raw.githubusercontent.com/Roblox/Core-Scripts/master/CoreScriptsRoot/Libraries/RbxStamper.lua";
+			std::string RbxUtilityLink = "https://raw.githubusercontent.com/Roblox/Core-Scripts/master/CoreScriptsRoot/Libraries/RbxUtility.lua";
+			std::string key = lua_tostring(L, -1);
+			if (key == "RbxGui") {
+				luaL_dostring(L, Utils::DownloadStringFromUrl(RbxGuiLink).c_str());
+			}
+			else if (key == "RbxStamper") {
+				luaL_dostring(L, Utils::DownloadStringFromUrl(RbxStamperLink).c_str());
+			}
+			else if (key == "RbxUtility") {
+				luaL_dostring(L, Utils::DownloadStringFromUrl(RbxUtilityLink).c_str());
+			}
+			return 1;
+		}
+		int GetObjects(lua_State* L)
+		{
+			return 1;
+		}
+		int HttpGet(lua_State* L) {
+			return 1;
+		}
+		int getrawmetatable(lua_State* L) {
+			int args;
+			if ((args = lua_gettop(L)), args > 1 || args == 0)
+				return r_luaL_error(RLS, "argument count exceeded, expected 1 got %i", args);
+			Wrapper::UnWrap(L, RLS, -1);
+			r_lua_getmetatable(RLS, -1);
+			Wrapper::Wrap(RLS, L, -1);
+			return 1;
+		}
+		int getgenv(lua_State* L) {
+			lua_pushvalue(LS, LUA_GLOBALSINDEX);
+			lua_xmove(LS, L, 1);
+			return 1;
+		}
+	}
+
+	void registerfunctions(lua_State* L) {
+		lua_register(L, "LoadLibrary", Functions::LoadLibraryImpl);
+		lua_register(L, "getrawmetatable", Functions::getrawmetatable);
+		lua_register(L, "getgenv", Functions::getgenv);
+	}
+	void Wrap(DWORD RL, lua_State* L, int Index) {
+		//printf("Wrap: %d\r\n", r_lua_type(RL, Index));
+		if (r_lua_type(RL, Index) == Wrapper::DataTypes::R_LUA_TNONE) {
+			lua_pushnil(L);
+		}
+		else if (r_lua_type(RL, Index) == Wrapper::DataTypes::R_LUA_TLIGHTUSERDATA) {
+			lua_pushlightuserdata(L, nullptr);
+		}
+		else if (r_lua_type(RL, Index) == Wrapper::DataTypes::R_LUA_TNIL) {
+			lua_pushnil(L);
+		}
+		else if (r_lua_type(RL, Index) == Wrapper::DataTypes::R_LUA_TNUMBER) {
+			lua_pushnumber(L, r_lua_tonumber(RL, Index, 0));
+		}
+		else if (r_lua_type(RL, Index) == Wrapper::DataTypes::R_LUA_TBOOLEAN) {
+			lua_pushboolean(L, r_lua_toboolean(RL, Index));
+		}
+		else if (r_lua_type(RL, Index) == Wrapper::DataTypes::R_LUA_TSTRING) {
+			lua_pushstring(L, r_lua_tolstring(RL, Index, 0));
+		}
+		else if (r_lua_type(RL, Index) == Wrapper::DataTypes::R_LUA_TTHREAD) {
+			lua_newthread(L);
+		}
+		else if (r_lua_type(RL, Index) == Wrapper::DataTypes::R_LUA_TFUNCTION) {
+			r_lua_pushvalue(RL, Index);
+			lua_pushnumber(L, r_luaL_ref(RL, LUA_REGISTRYINDEX));
+			lua_pushcclosure(L, LuaFuncHandler, 1);
+		}
+		else if (r_lua_type(RL, Index) == Wrapper::DataTypes::R_LUA_TTABLE) {
+			r_lua_pushvalue(RL, Index);
+			lua_newtable(L);
+			r_lua_pushnil(RL);
+			while (r_lua_next(RL, -2))
+			{
+				Wrapper::Wrap(RL, L, -2);
+				Wrapper::Wrap(RL, L, -1);
+				lua_settable(L, -3);
+				r_lua_pop(RL, 1);
+			}
+			r_lua_pop(RL, 1);
+		}
+		else if (r_lua_type(RL, Index) == Wrapper::DataTypes::R_LUA_TUSERDATA) {
+			uintptr_t rawInstancePtr = r_lua_touserdata(RL, Index);
+			lua_rawgeti(L, LUA_REGISTRYINDEX, rawInstancePtr);
+			if (!lua_type(L, -1))
+			{
+				lua_settop(L, -2);
+				r_lua_pushvalue(RL, Index);
+				reinterpret_cast<Userdata*>(lua_newuserdata(L, sizeof(Userdata)))->reference = r_luaL_ref(RL, -10000);
+				r_lua_getmetatable(RL, Index);
+				Wrapper::Wrap(RL, L, -1);
+
+				lua_pushcfunction(L, Wrapper::MetaMethods::Index);
+				lua_setfield(L, -2, "__index");
+				lua_pushcfunction(L, Wrapper::MetaMethods::GarbageCollector);
+				lua_setfield(L, -2, "__gc");
+
+				lua_setmetatable(L, -2);
+				lua_pushvalue(L, -1);
+				lua_rawseti(L, -10000, rawInstancePtr);
+				r_lua_settop(RL, -2);
+			}
+		}
+	}
+	void UnWrap(lua_State* L, DWORD RL, int Index) {
+		//printf("UnWrap: %d\r\n", lua_type(L, Index));
+		if (lua_type(L, Index) == LUA_TNIL) {
+			r_lua_pushnil(RL);
+		}
+		else if (lua_type(L, Index) == LUA_TNONE) {
+			r_lua_pushnil(RL);
+		}
+		else if (lua_type(L, Index) == LUA_TSTRING) {
+			r_lua_pushstring(RL, lua_tostring(L, Index));
+		}
+		else if (lua_type(L, Index) == LUA_TNUMBER) {
+			r_lua_pushnumber(RL, lua_tonumber(L, Index));
+		}
+		else if (lua_type(L, Index) == LUA_TBOOLEAN) {
+			r_lua_pushboolean(RL, lua_toboolean(L, Index));
+		}
+		else if (lua_type(L, Index) == LUA_TTHREAD) {
+			r_lua_newthread(RL);
+		}
+		else if (lua_type(L, Index) == LUA_TUSERDATA) {
+			r_lua_rawgeti(RL, LUA_REGISTRYINDEX, reinterpret_cast<Userdata*>(lua_touserdata(L, Index))->reference);
+			if (!r_lua_type(RL, -1))
+			{
+				r_lua_settop(RL, -2);
+			}
+		}
+		else if (lua_type(L, Index) == LUA_TTABLE) {
+			lua_pushvalue(L, Index);
+			lua_getfield(L, LUA_GLOBALSINDEX, "tostring");
+			lua_pushvalue(L, -2);
+			lua_pcall(L, 1, 1, 0);
+			const char* a = lua_tolstring(L, -1, NULL);
+			lua_settop(L, -2);
+			r_lua_createtable(RL, 0, 0);
+			lua_pushnil(L);
+			while (lua_next(L, -2)) {
+				lua_pushvalue(L, -1);
+				lua_getfield(L, LUA_GLOBALSINDEX, "tostring");
+				lua_pushvalue(L, -2);
+				lua_pcall(L, 1, 1, 0);
+				const char* b = lua_tolstring(L, -1, NULL);
+				lua_settop(L, -3);
+				if (strcmp(a, b) == 0) {
+					lua_settop(L, -2);
+					continue;
+				}
+				UnWrap(L, RL, -2);
+				UnWrap(L, RL, -1);
+				r_lua_settable(RL, -3);
+				lua_settop(L, -2);
+			}
+			lua_settop(L, -2);
+		}
+		else if (lua_type(L, Index) == LUA_TFUNCTION) {
+			lua_pushvalue(L, Index);
+			r_lua_pushnumber(RL, luaL_ref(L, LUA_REGISTRYINDEX));
+			pushcclosureMOD(RL, RBXFuncHandler, 1, INT3Breakpoint);
+		}
+	}
+
+	static int registry;
+	int VanillaYield(lua_State* thread)
+	{
+		lua_State* L = lua_tothread(thread, lua_upvalueindex(1));
+		const int nargs = lua_gettop(thread);
+		lua_xmove(thread, L, nargs);
+		return lua_resume(L, nargs);
+	}
+	int RobloxYield(DWORD thread)
+	{
+		lua_State* L = (lua_State*)r_lua_touserdata(thread, lua_upvalueindex(1));
+		const int nargs = r_lua_gettop(thread);
+		for (int arg = 1; arg <= nargs; ++arg)
+			Wrapper::Wrap(thread, L, arg);
+		return lua_resume(L, nargs);
+		lua_close(L);
+	}
+	int RBXFuncHandler(DWORD rL)
+	{
+		lua_pushstring(LS, std::to_string(++registry).c_str());
+		lua_State* L = lua_newthread(LS);
+		lua_settable(LS, LUA_REGISTRYINDEX);
+
+		int key = r_lua_tonumber(rL, lua_upvalueindex(1),0);
+
+		lua_rawgeti(L, LUA_REGISTRYINDEX, key);
+
+		for (int f = 1; f <= r_lua_gettop(rL); f++)
+			Wrapper::Wrap(rL, L, f);
+		int Err = lua_pcall(L, r_lua_gettop(rL), LUA_MULTRET, 0);
+		if (!Err) {
+			int args = 0;
+			for (int arg = 1; arg <= lua_gettop(L); ++arg, ++args) {
+				UnWrap(L, rL, arg);
+			}
+			lua_settop(L, 0);
+			return args;
+		}
+		else if (Err == LUA_YIELD) {
+			r_lua_pushlightuserdata(RLS, (void*)L);
+			pushcclosureMOD(RLS, RobloxYield, 1, INT3Breakpoint);
+		}
+		else if (Err == LUA_ERRRUN) {
+			r_luaL_error(rL, luaL_checkstring(L, -1));
+			return 0;
+		}
+		return 0;
+	}
+
+	int LuaFuncHandler(lua_State* L)
+	{
+		std::string s("check");
+		r_lua_pushstring(RLS, std::to_string(++registry).c_str());
+		DWORD rL = r_lua_newthread(RLS);
+		r_lua_settable(RLS, LUA_REGISTRYINDEX);
+		int key = lua_tonumber(L, lua_upvalueindex(1));
+		r_lua_rawgeti(rL, LUA_REGISTRYINDEX, key);
+
+		for (int arg = 1; arg <= lua_gettop(L); ++arg)
+			Wrapper::UnWrap(L, rL, arg);
+
+		if (!r_lua_pcall(rL, lua_gettop(L), LUA_MULTRET, 0)) {
+			int args = 0;
+			for (int arg = 1; arg <= r_lua_gettop(rL); ++arg, ++args) {
+				Wrap(rL, L, arg);
+			}
+			r_lua_settop(rL, 0);
+			return args;
+		}
+		else {
+
+			r_lua_pop(rL, 1);
+			lua_pushthread(L);
+			lua_pushcclosure(L, &VanillaYield, 1);
+			UnWrap(L, rL, -1);
+			return lua_yield(L, 0);
+		}
+		return 0;
+	}
+
+	LONG WINAPI bigboihandler(PEXCEPTION_POINTERS ex)
+	{
+		if (ex->ExceptionRecord->ExceptionCode == EXCEPTION_BREAKPOINT)
+		{
+			if (ex->ContextRecord->Eip == INT3Breakpoint)
+			{
+				ex->ContextRecord->Eip = (DWORD)(JmpBackHandler);
+				return EXCEPTION_CONTINUE_EXECUTION;
+			}
+		}
+		return EXCEPTION_CONTINUE_SEARCH;
+	}
+
+	DWORD locateINT3() {
+		DWORD _s = ASLR(0x400000);
+		const char i3_8opcode[8] = { 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC };
+		for (int i = 0; i < MAX_INT; i++)
+			if (memcmp((void*)(_s + i), i3_8opcode, sizeof(i3_8opcode)) == 0)
+				return (_s + i);
+
+		return NULL;
+	}
+
+	void WrapGlobal(lua_State* L, DWORD GAE, const char* glob) {
+		DebugOutput("Wrapping Global: ", glob);
+		r_lua_getfield(GAE, LUA_GLOBALSINDEX, glob);
+		Wrapper::Wrap(GAE, L, -1);
+		lua_setglobal(L, glob);
+		r_lua_settop(GAE, -(1) - 1);
+	}
+
+	void ExecuteScript(std::string script) {
+		script = "spawn(function() script = Instance.new('LocalScript') script.Parent = nil " + script + " end)";
+		if (luaL_loadbuffer(LS, script.c_str(), script.length(), "@Oxygen"))
+		{
+			DebugOutput("Oxygen Error: ", lua_tostring(LS, -1));
+		}
+	}
+}
